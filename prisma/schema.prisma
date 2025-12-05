@@ -1,0 +1,197 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Planos de créditos
+model Plan {
+  id               String   @id @default(cuid())
+  name             String   @unique
+  displayName      String   // Nome para exibição
+  creditCost       Float    // Custo em créditos por requisição (ex: 0.33)
+  maxRequestsPerSecond Int  @default(2) // Rate limit por segundo
+  description      String?
+  active           Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  users            User[]
+
+  @@index([active])
+}
+
+// Usuários
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // Plano do usuário
+  planId        String    @default("basic")
+  plan          Plan      @relation(fields: [planId], references: [id])
+  
+  accounts      Account[]
+  sessions      Session[]
+  apiKeys       ApiKey[]
+  credits       Credit[]
+  cnpjQueries   CnpjQuery[]
+
+  @@index([email])
+  @@index([planId])
+}
+
+// Accounts - NextAuth
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+// Sessions - NextAuth
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// Verification Tokens - NextAuth
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// API Keys dos usuários
+model ApiKey {
+  id          String   @id @default(cuid())
+  userId      String
+  key         String   @unique // Hash da chave
+  name        String   // Nome descritivo da chave
+  lastUsedAt  DateTime?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  expiresAt   DateTime? // Opcional: chaves com expiração
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([key])
+  @@index([active])
+}
+
+// Créditos dos usuários
+model Credit {
+  id          String   @id @default(cuid())
+  userId      String
+  amount      Float    // Quantidade de créditos
+  type        CreditType // PURCHASE, BONUS, REFUND, DEDUCTION
+  description String?
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+enum CreditType {
+  PURCHASE   // Compra
+  BONUS      // Bônus
+  REFUND     // Reembolso
+  DEDUCTION  // Dedução (uso)
+}
+
+// Dados de CNPJ cacheados
+model CnpjData {
+  id                    String   @id @default(cuid())
+  cnpj                  String   @unique // CNPJ sem formatação
+  
+  // Dados da empresa
+  razaoSocial           String
+  nomeFantasia          String?
+  cnae                  String?
+  descricaoCnae         String?
+  naturezaJuridica      String?
+  dataAbertura          String?
+  situacaoCadastral     String?
+  dataSituacaoCadastral String?
+  capitalSocial         String?
+  porte                 String?
+  
+  // Endereço
+  logradouro            String?
+  numero                String?
+  complemento           String?
+  bairro                String?
+  municipio             String?
+  uf                    String?
+  cep                   String?
+  
+  // Contato
+  telefone              String?
+  email                 String?
+  
+  // Sócios (JSON)
+  socios                Json?
+  
+  // Controle de cache
+  source                String   // Qual API foi usada
+  lastUpdatedAt         DateTime @default(now())
+  createdAt             DateTime @default(now())
+  
+  queries               CnpjQuery[]
+
+  @@index([cnpj])
+  @@index([lastUpdatedAt])
+}
+
+// Histórico de consultas de CNPJ
+model CnpjQuery {
+  id          String   @id @default(cuid())
+  userId      String
+  cnpj        String
+  cnpjDataId  String?
+  creditCost  Float    // Quanto custou essa consulta
+  source      String   // API usada ou "cache"
+  success     Boolean  @default(true)
+  errorMessage String?
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cnpjData    CnpjData? @relation(fields: [cnpjDataId], references: [id])
+
+  @@index([userId])
+  @@index([cnpj])
+  @@index([createdAt])
+}
