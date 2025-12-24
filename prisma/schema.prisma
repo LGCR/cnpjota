@@ -7,7 +7,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 // Planos de créditos
@@ -38,8 +37,8 @@ model User {
   updatedAt     DateTime  @updatedAt
   
   // Plano do usuário
-  planId        String    @default("basic")
-  plan          Plan      @relation(fields: [planId], references: [id])
+  planId        String?
+  plan          Plan?     @relation(fields: [planId], references: [id])
   
   accounts      Account[]
   sessions      Session[]
@@ -146,7 +145,7 @@ model CnpjData {
   dataAbertura          String?
   situacaoCadastral     String?
   dataSituacaoCadastral String?
-  capitalSocial         String?
+  capitalSocial         Decimal?
   porte                 String?
   
   // Endereço

@@ -1,6 +1,5 @@
 import { NextRequest } from 'next/server';
 import { prisma } from './prisma';
-import { hashApiKey } from './crypto';
 import { UnauthorizedError } from '@/types/errors';
 
 export interface AuthenticatedUser {
@@ -21,10 +20,9 @@ export async function validateApiKey(request: NextRequest): Promise<Authenticate
   }
 
   const apiKey = authHeader.replace('Bearer ', '');
-  const hashedKey = hashApiKey(apiKey);
 
   const apiKeyRecord = await prisma.apiKey.findUnique({
-    where: { key: hashedKey, active: true },
+    where: { key: apiKey, active: true },
     include: {
       user: {
         select: {

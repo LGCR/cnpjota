@@ -6,7 +6,6 @@ const nextConfig = {
     },
   },
   // Otimizações de build
-  swcMinify: true,
   compress: true,
   
   // Headers de segurança

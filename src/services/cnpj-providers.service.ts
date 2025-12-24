@@ -26,12 +26,27 @@ export class BrasilApiProvider implements CnpjProvider {
     try {
       const response = await fetch(`${this.baseUrl}/${cnpj}`, {
         method: 'GET',
-        headers: { 'Accept': 'application/json' },
+        headers: {
+          'Accept': 'application/json',
+          'User-Agent': 'cnpjota/1.0',
+        },
         signal: AbortSignal.timeout(10000), // 10s timeout
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
+        const text = await response.text().catch(() => '<no body>');
+        console.error(`⚠️ [BrasilAPI] HTTP ${response.status} - body:`, text);
+
+        // Log Retry-After header if present
+        const retryAfter = response.headers.get('retry-after') || response.headers.get('Retry-After');
+        if (retryAfter) console.error(`⚠️ [BrasilAPI] Retry-After: ${retryAfter}`);
+
+        // Provide more context for 403
+        if (response.status === 403) {
+          throw new Error(`HTTP 403 Forbidden: ${text}`);
+        }
+
+        throw new Error(`HTTP ${response.status}: ${text}`);
       }
 
       const data: BrasilApiResponse = await response.json();
@@ -47,7 +62,7 @@ export class BrasilApiProvider implements CnpjProvider {
   private mapToDto(data: BrasilApiResponse): CnpjResponseDto {
     return {
       cnpj: data.cnpj,
-      razaoSocial: data.razao_social,
+      razaoSocial: data.razao_social || 'Não informado',
       nomeFantasia: data.nome_fantasia || null,
       cnae: data.cnae_fiscal?.toString() || null,
       descricaoCnae: data.cnae_fiscal_descricao || null,
@@ -55,7 +70,7 @@ export class BrasilApiProvider implements CnpjProvider {
       dataAbertura: data.data_inicio_atividade || null,
       situacaoCadastral: data.descricao_situacao_cadastral || null,
       dataSituacaoCadastral: data.data_situacao_cadastral || null,
-      capitalSocial: data.capital_social?.toString() || null,
+      capitalSocial: typeof data.capital_social === 'number' ? data.capital_social : (data.capital_social ? Number(String(data.capital_social).replace(/[^0-9.-]+/g, '')) : null),
       porte: data.descricao_porte || null,
       endereco: {
         logradouro: data.logradouro || null,
@@ -76,7 +91,6 @@ export class BrasilApiProvider implements CnpjProvider {
         dataEntrada: s.data_entrada_sociedade || null,
         cpfCnpj: s.cpf_cnpj_socio || null,
       })) || null,
-      fonte: this.name,
       dataAtualizacao: new Date().toISOString(),
     };
   }
@@ -88,11 +102,11 @@ export class BrasilApiProvider implements CnpjProvider {
 export class OpenCnpjProvider implements CnpjProvider {
   name = 'OpenCNPJ';
   priority = 2;
-  private baseUrl = 'https://open.cnpja.com';
+  private baseUrl = 'https://api.opencnpj.org';
 
   async fetch(cnpj: string): Promise<CnpjResponseDto> {
     try {
-      const response = await fetch(`${this.baseUrl}/office/${cnpj}`, {
+      const response = await fetch(`${this.baseUrl}/${cnpj}`, {
         method: 'GET',
         headers: { 'Accept': 'application/json' },
         signal: AbortSignal.timeout(10000),
@@ -114,37 +128,38 @@ export class OpenCnpjProvider implements CnpjProvider {
 
   private mapToDto(data: OpenCnpjResponse): CnpjResponseDto {
     return {
-      cnpj: data.taxId,
-      razaoSocial: data.name,
-      nomeFantasia: data.alias || null,
-      cnae: data.mainActivity?.id?.toString() || null,
-      descricaoCnae: data.mainActivity?.text || null,
-      naturezaJuridica: data.company?.nature?.text || null,
-      dataAbertura: data.founded || null,
-      situacaoCadastral: data.status?.text || null,
-      dataSituacaoCadastral: data.statusDate || null,
-      capitalSocial: data.company?.equity?.toString() || null,
-      porte: data.company?.size?.text || null,
+      cnpj: data.cnpj,
+      razaoSocial: data.razao_social || 'Não informado',
+      nomeFantasia: data.nome_fantasia || null,
+      cnae: data.cnae_principal || null,
+      descricaoCnae: null, // OpenCNPJ não fornece descrição do CNAE principal
+      naturezaJuridica: data.natureza_juridica || null,
+      dataAbertura: data.data_inicio_atividade || null,
+      situacaoCadastral: data.situacao_cadastral || null,
+      dataSituacaoCadastral: data.data_situacao_cadastral || null,
+      capitalSocial: data.capital_social ? Number(String(data.capital_social).replace(/[^0-9.-]+/g, '')) : null,
+      porte: data.porte_empresa || null,
       endereco: {
-        logradouro: data.address?.street || null,
-        numero: data.address?.number || null,
-        complemento: data.address?.details || null,
-        bairro: data.address?.district || null,
-        municipio: data.address?.city || null,
-        uf: data.address?.state || null,
-        cep: data.address?.zip || null,
+        logradouro: data.logradouro || null,
+        numero: data.numero || null,
+        complemento: data.complemento || null,
+        bairro: data.bairro || null,
+        municipio: data.municipio || null,
+        uf: data.uf || null,
+        cep: data.cep || null,
       },
       contato: {
-        telefone: data.phones?.[0] ? `${data.phones[0].area}${data.phones[0].number}` : null,
-        email: data.emails?.[0]?.address || null,
+        telefone: data.telefones?.[0] 
+          ? `${data.telefones[0].ddd}${data.telefones[0].numero}` 
+          : null,
+        email: data.email || null,
       },
-      socios: data.members?.map((m) => ({
-        nome: m.name,
-        qualificacao: m.role?.text || null,
-        dataEntrada: m.since || null,
-        cpfCnpj: null,
+      socios: data.QSA?.map((s) => ({
+        nome: s.nome_socio,
+        qualificacao: s.qualificacao_socio || null,
+        dataEntrada: s.data_entrada_sociedade || null,
+        cpfCnpj: s.cnpj_cpf_socio || null,
       })) || null,
-      fonte: this.name,
       dataAtualizacao: new Date().toISOString(),
     };
   }
@@ -156,7 +171,7 @@ export class OpenCnpjProvider implements CnpjProvider {
 export class CnpjaProvider implements CnpjProvider {
   name = 'CNPJá';
   priority = 3;
-  private baseUrl = 'https://api.cnpja.com';
+  private baseUrl = 'https://open.cnpja.com';
 
   async fetch(cnpj: string): Promise<CnpjResponseDto> {
     try {
@@ -183,7 +198,7 @@ export class CnpjaProvider implements CnpjProvider {
   private mapToDto(data: CnpjaResponse): CnpjResponseDto {
     return {
       cnpj: data.estabelecimento.cnpj,
-      razaoSocial: data.razao_social,
+      razaoSocial: data.razao_social || 'Não informado',
       nomeFantasia: data.estabelecimento.nome_fantasia || null,
       cnae: data.estabelecimento.atividade_principal?.id || null,
       descricaoCnae: data.estabelecimento.atividade_principal?.descricao || null,
@@ -191,7 +206,7 @@ export class CnpjaProvider implements CnpjProvider {
       dataAbertura: data.estabelecimento.data_inicio_atividade || null,
       situacaoCadastral: data.estabelecimento.situacao_cadastral || null,
       dataSituacaoCadastral: data.estabelecimento.data_situacao_cadastral || null,
-      capitalSocial: data.capital_social?.toString() || null,
+      capitalSocial: typeof data.capital_social === 'number' ? data.capital_social : (data.capital_social ? Number(String(data.capital_social).replace(/[^0-9.-]+/g, '')) : null),
       porte: data.porte?.descricao || null,
       endereco: {
         logradouro: data.estabelecimento.logradouro || null,
@@ -214,7 +229,6 @@ export class CnpjaProvider implements CnpjProvider {
         dataEntrada: null,
         cpfCnpj: null,
       })) || null,
-      fonte: this.name,
       dataAtualizacao: new Date().toISOString(),
     };
   }
@@ -259,7 +273,7 @@ export class ReceitaWsProvider implements CnpjProvider {
   private mapToDto(data: ReceitaWsResponse): CnpjResponseDto {
     return {
       cnpj: data.cnpj,
-      razaoSocial: data.nome,
+      razaoSocial: data.nome || 'Não informado',
       nomeFantasia: data.fantasia || null,
       cnae: data.atividade_principal?.[0]?.code || null,
       descricaoCnae: data.atividade_principal?.[0]?.text || null,
@@ -267,7 +281,7 @@ export class ReceitaWsProvider implements CnpjProvider {
       dataAbertura: data.abertura || null,
       situacaoCadastral: data.situacao || null,
       dataSituacaoCadastral: data.data_situacao || null,
-      capitalSocial: data.capital_social || null,
+      capitalSocial: data.capital_social ? Number(String(data.capital_social).replace(/[^0-9.-]+/g, '')) : null,
       porte: data.porte || null,
       endereco: {
         logradouro: data.logradouro || null,
@@ -288,7 +302,6 @@ export class ReceitaWsProvider implements CnpjProvider {
         dataEntrada: null,
         cpfCnpj: null,
       })) || null,
-      fonte: this.name,
       dataAtualizacao: new Date().toISOString(),
     };
   }
@@ -309,7 +322,7 @@ export class CnpjProviderManager {
     ].sort((a, b) => a.priority - b.priority);
   }
 
-  async fetchWithFallback(cnpj: string): Promise<CnpjResponseDto> {
+  async fetchWithFallback(cnpj: string): Promise<{ data: CnpjResponseDto; source: string }> {
     const errors: Array<{ provider: string; error: string }> = [];
 
     for (const provider of this.providers) {
@@ -317,7 +330,7 @@ export class CnpjProviderManager {
         console.log(`Tentando ${provider.name}...`);
         const result = await provider.fetch(cnpj);
         console.log(`✓ Sucesso com ${provider.name}`);
-        return result;
+        return { data: result, source: provider.name };
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
         console.error(`✗ Falha em ${provider.name}: ${errorMessage}`);

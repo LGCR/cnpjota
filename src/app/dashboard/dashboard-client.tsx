@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CreditCard, Key, BarChart3, Copy, Check, Plus, Trash2 } from 'lucide-react';
+import { CodeBlock } from '@/components/ui/code-block';
+import { LanguageIcon } from '@/components/ui/language-icon';
 
 interface DashboardClientProps {
   user: {
@@ -21,46 +23,42 @@ interface DashboardClientProps {
     credits: number;
     totalQueries: number;
   };
-  apiKeys: Array<{
+  apiKey: {
     id: string;
     name: string;
+    key: string;
     lastUsedAt: Date | null;
     createdAt: Date;
-  }>;
+  } | null;
+  apiUrl: string;
 }
 
-export default function DashboardClient({ user, stats, apiKeys: initialApiKeys }: DashboardClientProps) {
-  const [apiKeys, setApiKeys] = useState(initialApiKeys);
-  const [newApiKeyName, setNewApiKeyName] = useState('');
+export default function DashboardClient({ user, stats, apiKey: initialApiKey, apiUrl }: DashboardClientProps) {
+  const [apiKey, setApiKey] = useState(initialApiKey);
   const [createdApiKey, setCreatedApiKey] = useState<string | null>(null);
   const [copiedKey, setCopiedKey] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
 
   const handleCreateApiKey = async () => {
-    if (!newApiKeyName.trim()) return;
-
     setIsCreating(true);
     try {
       const response = await fetch('/api/v1/api-keys', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newApiKeyName }),
+        body: JSON.stringify({ name: 'API Key' }),
       });
 
       const result = await response.json();
 
       if (result.success) {
         setCreatedApiKey(result.data.key);
-        setApiKeys([
-          {
-            id: result.data.id,
-            name: result.data.name,
-            lastUsedAt: null,
-            createdAt: new Date(result.data.createdAt),
-          },
-          ...apiKeys,
-        ]);
-        setNewApiKeyName('');
+        setApiKey({
+          id: result.data.id,
+          name: result.data.name,
+          key: result.data.key,
+          lastUsedAt: null,
+          createdAt: new Date(result.data.createdAt),
+        });
       }
     } catch (error) {
       console.error('Erro ao criar API key:', error);
@@ -69,19 +67,33 @@ export default function DashboardClient({ user, stats, apiKeys: initialApiKeys }
     }
   };
 
-  const handleDeleteApiKey = async (id: string) => {
-    if (!confirm('Tem certeza que deseja desativar esta API key?')) return;
+  const handleRegenerateApiKey = async () => {
+    if (!confirm('Tem certeza que deseja regenerar sua API key? A chave atual será desativada.')) return;
 
+    setIsCreating(true);
     try {
-      const response = await fetch(`/api/v1/api-keys/${id}`, {
-        method: 'DELETE',
+      const response = await fetch(`/api/v1/api-keys/${apiKey!.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ regenerate: true }),
       });
 
-      if (response.ok) {
-        setApiKeys(apiKeys.filter((key) => key.id !== id));
+      const result = await response.json();
+
+      if (result.success) {
+        setCreatedApiKey(result.data.key);
+        setApiKey({
+          id: result.data.id,
+          name: result.data.name,
+          key: result.data.key,
+          lastUsedAt: null,
+          createdAt: new Date(result.data.createdAt),
+        });
       }
     } catch (error) {
-      console.error('Erro ao deletar API key:', error);
+      console.error('Erro ao regenerar API key:', error);
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -144,9 +156,9 @@ export default function DashboardClient({ user, stats, apiKeys: initialApiKeys }
         <TabsContent value="api-keys" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Suas API Keys</CardTitle>
+              <CardTitle>Sua API Key</CardTitle>
               <CardDescription>
-                Gerencie as chaves de API para acessar o serviço
+                Chave de API para acessar o serviço CNPJota
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -181,49 +193,66 @@ export default function DashboardClient({ user, stats, apiKeys: initialApiKeys }
                 </div>
               )}
 
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Nome da API Key (ex: Produção)"
-                  value={newApiKeyName}
-                  onChange={(e) => setNewApiKeyName(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleCreateApiKey()}
-                />
-                <Button onClick={handleCreateApiKey} disabled={isCreating}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Criar
-                </Button>
-              </div>
-
-              <div className="space-y-2">
-                {apiKeys.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-8">
-                    Nenhuma API key criada ainda
+              {!apiKey ? (
+                <div className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    Você ainda não possui uma API key. Crie uma para começar a usar o serviço.
                   </p>
-                ) : (
-                  apiKeys.map((key) => (
-                    <div
-                      key={key.id}
-                      className="flex items-center justify-between p-3 border rounded-lg"
-                    >
-                      <div>
-                        <p className="font-medium">{key.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          Criada em {new Date(key.createdAt).toLocaleDateString('pt-BR')}
-                          {key.lastUsedAt &&
-                            ` • Último uso: ${new Date(key.lastUsedAt).toLocaleDateString('pt-BR')}`}
-                        </p>
+                  <Button onClick={handleCreateApiKey} disabled={isCreating}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Criar API Key
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="p-4 border rounded-lg bg-muted/30">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <Key className="h-4 w-4 text-primary" />
+                        <span className="font-medium">API Key</span>
                       </div>
                       <Button
-                        variant="ghost"
+                        variant="outline"
                         size="sm"
-                        onClick={() => handleDeleteApiKey(key.id)}
+                        onClick={handleRegenerateApiKey}
+                        disabled={isCreating}
                       >
-                        <Trash2 className="h-4 w-4 text-destructive" />
+                        <Plus className="h-4 w-4 mr-2" />
+                        Regenerar
                       </Button>
                     </div>
-                  ))
-                )}
-              </div>
+
+                    <div className="space-y-2">
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground">API KEY</label>
+                        <div className="flex gap-2 mt-1">
+                          <code className="flex-1 p-2 bg-background rounded border text-xs break-all font-mono">
+                            {apiKey.key}
+                          </code>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => copyToClipboard(apiKey.key)}
+                          >
+                            {copiedKey ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-4 text-xs text-muted-foreground">
+                        <span>Criada em {new Date(apiKey.createdAt).toLocaleDateString('pt-BR')}</span>
+                        {apiKey.lastUsedAt && (
+                          <span>Último uso: {new Date(apiKey.lastUsedAt).toLocaleDateString('pt-BR')}</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="text-xs text-muted-foreground">
+                    <p><strong>Importante:</strong> Mantenha sua API key segura e não a compartilhe publicamente.</p>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -233,18 +262,73 @@ export default function DashboardClient({ user, stats, apiKeys: initialApiKeys }
             <CardHeader>
               <CardTitle>Como Integrar</CardTitle>
               <CardDescription>
-                Exemplos de código para integrar com a API
+                Exemplos de código em diversas linguagens de programação populares
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <h4 className="font-medium mb-2">JavaScript / Node.js</h4>
-                <pre className="p-4 bg-gray-100 dark:bg-gray-800 rounded-lg overflow-x-auto text-sm">
-{`const apiKey = 'sua-api-key-aqui';
+            <CardContent>
+              <div className="mb-6 p-4 bg-muted/50 rounded-lg border">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-sm font-medium">URL da API:</span>
+                  <code className="text-sm bg-background px-2 py-1 rounded border font-mono">
+                    {apiUrl}
+                  </code>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Use esta URL nos seus exemplos de integração. Em produção, configure a variável NEXT_PUBLIC_API_URL com o domínio do seu servidor.
+                </p>
+              </div>
+
+              <Tabs defaultValue="javascript" className="w-full">
+                <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8 mb-6 h-auto gap-2 bg-muted/50 p-2">
+                  <TabsTrigger value="javascript" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                    <LanguageIcon language="javascript" className="w-5 h-5" />
+                    <span className="hidden sm:inline">JavaScript</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="python" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                    <LanguageIcon language="python" className="w-5 h-5" />
+                    <span className="hidden sm:inline">Python</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="php" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                    <LanguageIcon language="php" className="w-5 h-5" />
+                    <span className="hidden sm:inline">PHP</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="java" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                    <LanguageIcon language="java" className="w-5 h-5" />
+                    <span className="hidden sm:inline">Java</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="go" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                    <LanguageIcon language="go" className="w-5 h-5" />
+                    <span className="hidden sm:inline">Go</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="ruby" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                    <LanguageIcon language="ruby" className="w-5 h-5" />
+                    <span className="hidden sm:inline">Ruby</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="csharp" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                    <LanguageIcon language="csharp" className="w-5 h-5" />
+                    <span className="hidden sm:inline">C#</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="curl" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                    <LanguageIcon language="curl" className="w-5 h-5" />
+                    <span className="hidden sm:inline">cURL</span>
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="javascript" className="space-y-4 mt-6">
+                  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#F7DF1E]/20 bg-[#F7DF1E]/10 text-sm font-medium">
+                    <LanguageIcon language="javascript" className="w-5 h-5" />
+                    JavaScript / Node.js
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-3">
+                    Exemplo usando fetch API (Node.js 18+ ou navegador):
+                  </p>
+                  <CodeBlock 
+                    language="javascript" 
+                    code={`const apiKey = '${apiKey?.key || 'sua-api-key-aqui'}';
 const cnpj = '00000000000191';
 
 const response = await fetch(
-  \`https://seu-dominio.com/api/v1/cnpj/\${cnpj}\`,
+  \`${apiUrl}/api/v1/cnpj/\${cnpj}\`,
   {
     headers: {
       'Authorization': \`Bearer \${apiKey}\`
@@ -253,34 +337,236 @@ const response = await fetch(
 );
 
 const data = await response.json();
-console.log(data);`}
-                </pre>
-              </div>
+console.log(data);`} 
+                  />
+                </TabsContent>
 
-              <div>
-                <h4 className="font-medium mb-2">Python</h4>
-                <pre className="p-4 bg-gray-100 dark:bg-gray-800 rounded-lg overflow-x-auto text-sm">
-{`import requests
+                <TabsContent value="python" className="space-y-4 mt-6">
+                  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#3776AB]/20 bg-[#3776AB]/10 text-sm font-medium">
+                    <LanguageIcon language="python" className="w-5 h-5" />
+                    Python 3
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-3">
+                    Exemplo usando a biblioteca requests:
+                  </p>
+                  <CodeBlock 
+                    language="python" 
+                    code={`import requests
 
-api_key = 'sua-api-key-aqui'
+api_key = '${apiKey?.key || 'sua-api-key-aqui'}'
 cnpj = '00000000000191'
 
 response = requests.get(
-    f'https://seu-dominio.com/api/v1/cnpj/{cnpj}',
+    f'${apiUrl}/api/v1/cnpj/{cnpj}',
     headers={'Authorization': f'Bearer {api_key}'}
 )
 
 data = response.json()
-print(data)`}
-                </pre>
-              </div>
+print(data)`} 
+                  />
+                </TabsContent>
 
-              <div>
-                <h4 className="font-medium mb-2">cURL</h4>
-                <pre className="p-4 bg-gray-100 dark:bg-gray-800 rounded-lg overflow-x-auto text-sm">
-{`curl -X GET "https://seu-dominio.com/api/v1/cnpj/00000000000191" \\
-  -H "Authorization: Bearer sua-api-key-aqui"`}
-                </pre>
+                <TabsContent value="php" className="space-y-4 mt-6">
+                  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#777BB4]/20 bg-[#777BB4]/10 text-sm font-medium">
+                    <LanguageIcon language="php" className="w-5 h-5" />
+                    PHP
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-3">
+                    Exemplo usando cURL do PHP:
+                  </p>
+                  <CodeBlock 
+                    language="php" 
+                    code={`<?php
+$apiKey = '${apiKey?.key || 'sua-api-key-aqui'}';
+$cnpj = '00000000000191';
+
+$ch = curl_init();
+curl_setopt($ch, CURLOPT_URL, "${apiUrl}/api/v1/cnpj/$cnpj");
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_HTTPHEADER, [
+    "Authorization: Bearer $apiKey"
+]);
+
+$response = curl_exec($ch);
+curl_close($ch);
+
+$data = json_decode($response, true);
+print_r($data);`} 
+                  />
+                </TabsContent>
+
+                <TabsContent value="java" className="space-y-4 mt-6">
+                  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#007396]/20 bg-[#007396]/10 text-sm font-medium">
+                    <LanguageIcon language="java" className="w-5 h-5" />
+                    Java 11+
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-3">
+                    Exemplo usando HttpClient:
+                  </p>
+                  <CodeBlock 
+                    language="java" 
+                    code={`import java.net.http.*;
+import java.net.URI;
+
+String apiKey = "${apiKey?.key || 'sua-api-key-aqui'}";
+String cnpj = "00000000000191";
+
+HttpClient client = HttpClient.newHttpClient();
+HttpRequest request = HttpRequest.newBuilder()
+    .uri(URI.create("${apiUrl}/api/v1/cnpj/" + cnpj))
+    .header("Authorization", "Bearer " + apiKey)
+    .GET()
+    .build();
+
+HttpResponse<String> response = client.send(request, 
+    HttpResponse.BodyHandlers.ofString());
+    
+System.out.println(response.body());`} 
+                  />
+                </TabsContent>
+
+                <TabsContent value="go" className="space-y-4 mt-6">
+                  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#00ADD8]/20 bg-[#00ADD8]/10 text-sm font-medium">
+                    <LanguageIcon language="go" className="w-5 h-5" />
+                    Go (Golang)
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-3">
+                    Exemplo usando net/http:
+                  </p>
+                  <CodeBlock 
+                    language="go" 
+                    code={`package main
+
+import (
+    "fmt"
+    "io"
+    "net/http"
+)
+
+func main() {
+    apiKey := "${apiKey?.key || 'sua-api-key-aqui'}"
+    cnpj := "00000000000191"
+    
+    url := fmt.Sprintf("${apiUrl}/api/v1/cnpj/%s", cnpj)
+    
+    req, _ := http.NewRequest("GET", url, nil)
+    req.Header.Add("Authorization", "Bearer "+apiKey)
+    
+    client := &http.Client{}
+    resp, _ := client.Do(req)
+    defer resp.Body.Close()
+    
+    body, _ := io.ReadAll(resp.Body)
+    fmt.Println(string(body))
+}`} 
+                  />
+                </TabsContent>
+
+                <TabsContent value="ruby" className="space-y-4 mt-6">
+                  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#CC342D]/20 bg-[#CC342D]/10 text-sm font-medium">
+                    <LanguageIcon language="ruby" className="w-5 h-5" />
+                    Ruby
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-3">
+                    Exemplo usando Net::HTTP:
+                  </p>
+                  <CodeBlock 
+                    language="ruby" 
+                    code={`require 'net/http'
+require 'json'
+
+api_key = '${apiKey?.key || 'sua-api-key-aqui'}'
+cnpj = '00000000000191'
+
+uri = URI("${apiUrl}/api/v1/cnpj/#{cnpj}")
+req = Net::HTTP::Get.new(uri)
+req['Authorization'] = "Bearer #{api_key}"
+
+res = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) do |http|
+  http.request(req)
+end
+
+data = JSON.parse(res.body)
+puts data`} 
+                  />
+                </TabsContent>
+
+                <TabsContent value="csharp" className="space-y-4 mt-6">
+                  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#239120]/20 bg-[#239120]/10 text-sm font-medium">
+                    <LanguageIcon language="csharp" className="w-5 h-5" />
+                    C# / .NET
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-3">
+                    Exemplo usando HttpClient:
+                  </p>
+                  <CodeBlock 
+                    language="csharp" 
+                    code={`using System;
+using System.Net.Http;
+using System.Threading.Tasks;
+
+var apiKey = "${apiKey?.key || 'sua-api-key-aqui'}";
+var cnpj = "00000000000191";
+
+using var client = new HttpClient();
+client.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
+
+var response = await client.GetAsync(
+    $"{apiUrl}/api/v1/cnpj/{cnpj}"
+);
+
+var data = await response.Content.ReadAsStringAsync();
+Console.WriteLine(data);`} 
+                  />
+                </TabsContent>
+
+                <TabsContent value="curl" className="space-y-4 mt-6">
+                  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#073551]/20 bg-[#073551]/10 text-sm font-medium">
+                    <LanguageIcon language="curl" className="w-5 h-5" />
+                    cURL (Terminal)
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-3">
+                    Exemplo usando cURL no terminal:
+                  </p>
+                  <CodeBlock 
+                    language="bash" 
+                    code={`curl -X GET "${apiUrl}/api/v1/cnpj/00000000000191" \\
+  -H "Authorization: Bearer ${apiKey?.key || 'sua-api-key-aqui'}"`} 
+                  />
+                </TabsContent>
+              </Tabs>
+
+              <div className="mt-8 p-6 bg-gradient-to-br from-primary/5 via-primary/10 to-accent/5 border border-primary/20 rounded-xl">
+                <h4 className="font-semibold text-base mb-3 flex items-center gap-2">
+                  <span className="text-xl">📖</span>
+                  Estrutura de Resposta da API
+                </h4>
+                <p className="text-sm text-muted-foreground mb-4">
+                  A API retorna os dados da empresa em formato JSON estruturado:
+                </p>
+                <CodeBlock 
+                  language="json" 
+                  code={`{
+  "success": true,
+  "data": {
+    "cnpj": "00000000000191",
+    "razaoSocial": "EMPRESA EXEMPLO LTDA",
+    "nomeFantasia": "EXEMPLO",
+    "situacaoCadastral": "ATIVA",
+    "dataAbertura": "2020-01-01",
+    "capitalSocial": "100000.00",
+    "porte": "MICRO EMPRESA",
+    "endereco": {
+      "logradouro": "RUA EXEMPLO",
+      "numero": "123",
+      "bairro": "CENTRO",
+      "municipio": "SÃO PAULO",
+      "uf": "SP",
+      "cep": "01234-567"
+    }
+  }
+}`} 
+                />
               </div>
             </CardContent>
           </Card>

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { generateApiKey, hashApiKey } from '@/lib/crypto';
+import { generateApiKey } from '@/lib/crypto';
 import { z } from 'zod';
 
 const createApiKeySchema = z.object({
@@ -72,13 +72,12 @@ export async function POST(request: NextRequest) {
 
     // Gera API key
     const apiKey = generateApiKey();
-    const hashedKey = hashApiKey(apiKey);
 
-    // Salva no banco
+    // Salva no banco (plaintext para exibição no painel)
     const apiKeyRecord = await prisma.apiKey.create({
       data: {
         userId: session.user.id,
-        key: hashedKey,
+        key: apiKey,
         name: validation.data.name,
       },
     });
@@ -87,7 +86,7 @@ export async function POST(request: NextRequest) {
       success: true,
       data: {
         id: apiKeyRecord.id,
-        key: apiKey, // IMPORTANTE: Retornamos a chave apenas na criação
+        key: apiKeyRecord.key,
         name: apiKeyRecord.name,
         createdAt: apiKeyRecord.createdAt,
       },

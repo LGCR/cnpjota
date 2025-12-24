@@ -3,7 +3,7 @@ import { cnpjController } from '@/controllers/cnpj.controller';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { cnpj: string } }
+  { params }: { params: Promise<{ cnpj: string }> }
 ) {
   const response = await cnpjController.lookup(request);
   

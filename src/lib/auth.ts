@@ -4,6 +4,7 @@ import GoogleProvider from "next-auth/providers/google"
 import GitHubProvider from "next-auth/providers/github"
 import { prisma } from "@/lib/prisma"
 import { CreditType } from "@prisma/client"
+import { generateApiKey } from "@/lib/crypto"
 
 export const {
   handlers: { GET, POST },
@@ -30,51 +31,70 @@ export const {
       return session;
     },
     async signIn({ user, account, profile }) {
-      // Quando um novo usuário se registra, dar créditos de boas-vindas
-      if (account?.provider && user.email) {
-        const existingUser = await prisma.user.findUnique({
-          where: { email: user.email },
-          include: { credits: true },
+      return true;
+    },
+  },
+  events: {
+    async createUser(message) {
+      const userId = message.user.id as string;
+      
+      console.log('🔵 [AUTH] Novo usuário criado:', userId, message.user.email);
+      
+      try {
+        // Busca ou cria plano básico
+        let basicPlan = await prisma.plan.findUnique({
+          where: { name: 'basic' },
         });
 
-        // Se é novo usuário (sem créditos ainda)
-        if (existingUser && existingUser.credits.length === 0) {
-          // Busca ou cria plano básico
-          let basicPlan = await prisma.plan.findUnique({
-            where: { name: 'basic' },
-          });
-
-          if (!basicPlan) {
-            basicPlan = await prisma.plan.create({
-              data: {
-                name: 'basic',
-                displayName: 'Plano Básico',
-                creditCost: 0.33,
-                maxRequestsPerSecond: 2,
-                description: 'Plano básico para iniciantes',
-              },
-            });
-          }
-
-          // Atualiza usuário com plano básico
-          await prisma.user.update({
-            where: { id: existingUser.id },
-            data: { planId: basicPlan.id },
-          });
-
-          // Adiciona créditos de boas-vindas
-          await prisma.credit.create({
+        if (!basicPlan) {
+          console.log('⚠️  [AUTH] Plano básico não existe, criando...');
+          basicPlan = await prisma.plan.create({
             data: {
-              userId: existingUser.id,
-              amount: 100, // 100 créditos iniciais (~300 consultas)
-              type: CreditType.BONUS,
-              description: 'Bônus de boas-vindas',
+              name: 'basic',
+              displayName: 'Plano Básico',
+              creditCost: 0.33,
+              maxRequestsPerSecond: 2,
+              description: 'Plano básico para iniciantes',
             },
           });
         }
-      }
 
-      return true;
+        console.log('✅ [AUTH] Plano básico encontrado:', basicPlan.id);
+
+        // Atualiza usuário com plano básico
+        await prisma.user.update({
+          where: { id: userId },
+          data: { planId: basicPlan.id },
+        });
+
+        console.log('✅ [AUTH] Usuário atualizado com plano');
+
+        // Adiciona créditos de boas-vindas
+        await prisma.credit.create({
+          data: {
+            userId: userId,
+            amount: 100,
+            type: CreditType.BONUS,
+            description: 'Bônus de boas-vindas',
+          },
+        });
+
+        console.log('✅ [AUTH] 100 créditos adicionados');
+
+        // Cria API key automaticamente
+        const apiKey = generateApiKey();
+        await prisma.apiKey.create({
+          data: {
+            userId: userId,
+            key: apiKey,
+            name: 'API Key',
+          },
+        });
+
+        console.log('✅ [AUTH] API key criada:', apiKey);
+      } catch (error) {
+        console.error('❌ [AUTH] Erro ao configurar novo usuário:', error);
+      }
     },
   },
   pages: {

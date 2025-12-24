@@ -86,7 +86,7 @@ export class CnpjController {
         cnpj.replace(/\D/g, ''),
         cnpjData?.id || null,
         creditCost,
-        fromCache ? 'cache' : data.fonte,
+        fromCache ? 'cache' : (cnpjData?.source || 'unknown'),
         true
       );
 

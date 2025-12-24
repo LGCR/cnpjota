@@ -9,7 +9,7 @@ export interface CnpjResponseDto {
   dataAbertura: string | null;
   situacaoCadastral: string | null;
   dataSituacaoCadastral: string | null;
-  capitalSocial: string | null;
+  capitalSocial: number | null;
   porte: string | null;
   endereco: {
     logradouro: string | null;
@@ -25,7 +25,6 @@ export interface CnpjResponseDto {
     email: string | null;
   };
   socios: Socio[] | null;
-  fonte: string; // Qual API forneceu os dados
   dataAtualizacao: string; // Quando foi atualizado
 }
 
@@ -69,55 +68,43 @@ export interface BrasilApiResponse {
 }
 
 export interface OpenCnpjResponse {
-  taxId: string;
-  name: string;
-  alias: string;
-  founded: string;
-  head: boolean;
-  statusDate: string;
-  status: {
-    id: number;
-    text: string;
-  };
-  address: {
-    street: string;
-    number: string;
-    details: string;
-    district: string;
-    city: string;
-    state: string;
-    zip: string;
-  };
-  phones: Array<{
-    area: string;
-    number: string;
+  cnpj: string;
+  razao_social: string;
+  nome_fantasia: string;
+  situacao_cadastral: string;
+  data_situacao_cadastral: string;
+  matriz_filial: string;
+  data_inicio_atividade: string;
+  cnae_principal: string;
+  cnaes_secundarios: string[];
+  cnaes_secundarios_count: number;
+  natureza_juridica: string;
+  logradouro: string;
+  numero: string;
+  complemento: string;
+  bairro: string;
+  cep: string;
+  uf: string;
+  municipio: string;
+  email: string;
+  telefones: Array<{
+    ddd: string;
+    numero: string;
+    is_fax: boolean;
   }>;
-  emails: Array<{
-    address: string;
-  }>;
-  mainActivity: {
-    id: number;
-    text: string;
-  };
-  company: {
-    nature: {
-      id: number;
-      text: string;
-    };
-    equity: number;
-    size: {
-      id: number;
-      acronym: string;
-      text: string;
-    };
-  };
-  members: Array<{
-    name: string;
-    role: {
-      id: number;
-      text: string;
-    };
-    since: string;
+  capital_social: string;
+  porte_empresa: string;
+  opcao_simples: string | null;
+  data_opcao_simples: string | null;
+  opcao_mei: string | null;
+  data_opcao_mei: string | null;
+  QSA: Array<{
+    nome_socio: string;
+    cnpj_cpf_socio: string;
+    qualificacao_socio: string;
+    data_entrada_sociedade: string;
+    identificador_socio: string;
+    faixa_etaria: string;
   }>;
 }
 

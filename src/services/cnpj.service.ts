@@ -36,10 +36,10 @@ export class CnpjService {
     }
 
     // Consulta APIs externas com fallback
-    const data = await this.providerManager.fetchWithFallback(cleanedCnpj);
+    const { data, source } = await this.providerManager.fetchWithFallback(cleanedCnpj);
 
-    // Salva/atualiza no cache
-    await cnpjRepository.upsert(cleanedCnpj, data);
+    // Salva/atualiza no cache (passando a fonte/ provider)
+    await cnpjRepository.upsert(cleanedCnpj, data, source);
 
     return {
       data,

@@ -26,7 +26,7 @@ export class CnpjRepository {
   /**
    * Salva ou atualiza dados de CNPJ
    */
-  async upsert(cnpj: string, data: CnpjResponseDto): Promise<CnpjData> {
+  async upsert(cnpj: string, data: CnpjResponseDto, source?: string): Promise<CnpjData> {
     return prisma.cnpjData.upsert({
       where: { cnpj },
       create: {
@@ -39,7 +39,7 @@ export class CnpjRepository {
         dataAbertura: data.dataAbertura,
         situacaoCadastral: data.situacaoCadastral,
         dataSituacaoCadastral: data.dataSituacaoCadastral,
-        capitalSocial: data.capitalSocial,
+        capitalSocial: data.capitalSocial != null ? String(data.capitalSocial) : null,
         porte: data.porte,
         logradouro: data.endereco.logradouro,
         numero: data.endereco.numero,
@@ -51,7 +51,7 @@ export class CnpjRepository {
         telefone: data.contato.telefone,
         email: data.contato.email,
         socios: data.socios as any,
-        source: data.fonte,
+        source: source || 'unknown',
         lastUpdatedAt: new Date(),
       },
       update: {
@@ -63,7 +63,7 @@ export class CnpjRepository {
         dataAbertura: data.dataAbertura,
         situacaoCadastral: data.situacaoCadastral,
         dataSituacaoCadastral: data.dataSituacaoCadastral,
-        capitalSocial: data.capitalSocial,
+        capitalSocial: data.capitalSocial != null ? String(data.capitalSocial) : null,
         porte: data.porte,
         logradouro: data.endereco.logradouro,
         numero: data.endereco.numero,
@@ -75,7 +75,7 @@ export class CnpjRepository {
         telefone: data.contato.telefone,
         email: data.contato.email,
         socios: data.socios as any,
-        source: data.fonte,
+        source: source || 'unknown',
         lastUpdatedAt: new Date(),
       },
     });
@@ -120,7 +120,7 @@ export class CnpjRepository {
       dataAbertura: cnpjData.dataAbertura,
       situacaoCadastral: cnpjData.situacaoCadastral,
       dataSituacaoCadastral: cnpjData.dataSituacaoCadastral,
-      capitalSocial: cnpjData.capitalSocial,
+      capitalSocial: cnpjData.capitalSocial ? Number(String(cnpjData.capitalSocial)) : null,
       porte: cnpjData.porte,
       endereco: {
         logradouro: cnpjData.logradouro,
@@ -136,7 +136,6 @@ export class CnpjRepository {
         email: cnpjData.email,
       },
       socios: cnpjData.socios as any,
-      fonte: cnpjData.source,
       dataAtualizacao: cnpjData.lastUpdatedAt.toISOString(),
     };
   }

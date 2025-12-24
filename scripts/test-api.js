@@ -33,7 +33,7 @@ async function testCNPJ(cnpj, description) {
     if (data.success) {
       console.log('   ✅ Sucesso!');
       console.log(`   Razão Social: ${data.data.razaoSocial}`);
-      console.log(`   Fonte: ${data.data.fonte}`);
+      console.log(`   Fonte: (consulte registros ou cache)`);
       console.log(`   Custo: ${data.meta.creditCost} créditos`);
       console.log(`   Créditos restantes: ${data.meta.creditsRemaining}`);
     } else {
