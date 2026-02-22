@@ -1,21 +1,20 @@
-import { redirect } from 'next/navigation';
-import { auth } from '@/lib/auth';
-import DashboardModern from './dashboard-modern';
-import { prisma } from '@/lib/prisma';
-import { creditService } from '@/services/credit.service';
+import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { creditService } from "@/services/credit.service";
+import { redirect } from "next/navigation";
+import DashboardModern from "./dashboard-modern";
 
 export default async function DashboardPage() {
   const session = await auth();
 
   if (!session?.user) {
-    redirect('/login');
+    redirect("/login");
   }
 
   // Busca dados do usuário
   const user = await prisma.user.findUnique({
     where: { email: session.user.email! },
     include: {
-      plan: true,
       apiKeys: {
         where: { active: true },
         select: {
@@ -31,7 +30,7 @@ export default async function DashboardPage() {
   });
 
   if (!user) {
-    redirect('/login');
+    redirect("/login");
   }
 
   // Busca estatísticas
@@ -48,14 +47,13 @@ export default async function DashboardPage() {
         name: user.name,
         email: user.email,
         image: user.image,
-        plan: user.plan,
       }}
       stats={{
         credits,
         totalQueries,
       }}
       apiKey={user.apiKeys[0] || null}
-      apiUrl={process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}
+      apiUrl={process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}
     />
   );
 }

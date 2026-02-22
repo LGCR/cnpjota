@@ -1,6 +1,6 @@
-import { prisma } from '@/lib/prisma';
-import { InsufficientCreditsError } from '@/types/errors';
-import { CreditType } from '@prisma/client';
+import { prisma } from "@/lib/prisma";
+import { InsufficientCreditsError } from "@/types/errors";
+import { CreditType } from "@prisma/client";
 
 export class CreditService {
   /**
@@ -29,13 +29,13 @@ export class CreditService {
   async deductCredits(
     userId: string,
     amount: number,
-    description: string
+    description: string,
   ): Promise<void> {
     const hasCredits = await this.hasEnoughCredits(userId, amount);
 
     if (!hasCredits) {
       throw new InsufficientCreditsError(
-        `Créditos insuficientes. Necessário: ${amount.toFixed(2)}`
+        `Créditos insuficientes. Necessário: ${amount.toFixed(2)}`,
       );
     }
 
@@ -56,7 +56,7 @@ export class CreditService {
     userId: string,
     amount: number,
     type: CreditType,
-    description: string
+    description: string,
   ): Promise<void> {
     await prisma.credit.create({
       data: {
@@ -74,26 +74,17 @@ export class CreditService {
   async getHistory(userId: string, limit: number = 50) {
     return prisma.credit.findMany({
       where: { userId },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
       take: limit,
     });
   }
 
   /**
-   * Calcula custo de requisição baseado no plano
+   * Calcula custo de requisição (fixo em 0.33 créditos)
    */
   async calculateCost(userId: string): Promise<number> {
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      include: { plan: true },
-    });
-
-    if (!user || !user.plan) {
-      // Plano básico padrão
-      return 0.33;
-    }
-
-    return user.plan.creditCost;
+    // Custo fixo por consulta
+    return 0.33;
   }
 }
 

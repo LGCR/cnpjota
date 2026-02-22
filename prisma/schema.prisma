@@ -45,6 +45,7 @@ model User {
   apiKeys       ApiKey[]
   credits       Credit[]
   cnpjQueries   CnpjQuery[]
+  transactions  Transaction[]
 
   @@index([email])
   @@index([planId])
@@ -116,12 +117,15 @@ model Credit {
   amount      Float    // Quantidade de créditos
   type        CreditType // PURCHASE, BONUS, REFUND, DEDUCTION
   description String?
+  transactionId String? // Referência à transação de pagamento
   createdAt   DateTime @default(now())
 
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transaction Transaction? @relation(fields: [transactionId], references: [id])
 
   @@index([userId])
   @@index([createdAt])
+  @@index([transactionId])
 }
 
 enum CreditType {
@@ -129,6 +133,68 @@ enum CreditType {
   BONUS      // Bônus
   REFUND     // Reembolso
   DEDUCTION  // Dedução (uso)
+}
+
+// Pacotes de créditos disponíveis para compra
+model CreditPack {
+  id          String   @id @default(cuid())
+  name        String   @unique // Ex: "SMALL", "MEDIUM", "LARGE"
+  displayName String   // Nome para exibição
+  credits     Float    // Quantidade de créditos
+  price       Int      // Preço em centavos
+  description String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  transactions Transaction[]
+
+  @@index([active])
+}
+
+// Transações de pagamento
+model Transaction {
+  id              String   @id @default(cuid())
+  userId          String
+  creditPackId    String?
+  
+  // Dados da cobrança Payera
+  payeraChargeId  String?  @unique
+  paymentLink     String?
+  
+  // Status
+  status          TransactionStatus @default(PENDING)
+  
+  // Valores
+  amount          Float    // Créditos comprados
+  price           Int      // Preço pago em centavos
+  
+  // Metadata
+  metadata        Json?
+  
+  // Timestamps
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  paidAt          DateTime?
+  expiredAt       DateTime?
+  cancelledAt     DateTime?
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  creditPack      CreditPack? @relation(fields: [creditPackId], references: [id])
+  credits         Credit[]
+
+  @@index([userId])
+  @@index([payeraChargeId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum TransactionStatus {
+  PENDING    // Aguardando pagamento
+  PAID       // Pago
+  EXPIRED    // Expirado
+  CANCELLED  // Cancelado
+  REFUNDED   // Reembolsado
 }
 
 // Dados de CNPJ cacheados

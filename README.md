@@ -23,14 +23,14 @@ API SaaS para consulta de CNPJ com sistema de créditos, autenticação OAuth e 
 ## 🚀 Características
 
 - ✅ **Autenticação OAuth** com Google e GitHub (NextAuth)
-- ✅ **Sistema de Créditos** com planos flexíveis
+- ✅ **Sistema de Créditos** flexível e transparente
 - ✅ **Cache Inteligente** - dados atualizados a cada 15 dias
 - ✅ **Fallback Automático** entre 4 APIs de CNPJ:
   1. BrasilAPI (prioridade 1)
   2. OpenCNPJ (prioridade 2)
   3. CNPJá (prioridade 3)
   4. ReceitaWS (prioridade 4)
-- ✅ **Rate Limiting** configurável por plano
+- ✅ **Rate Limiting** para garantir estabilidade
 - ✅ **API Keys** seguras com hash
 - ✅ **Dashboard Completo** para gerenciar créditos e API keys
 - ✅ **Arquitetura Modular** - Controllers, Services, Repositories, DTOs
@@ -86,6 +86,7 @@ CNPJ_CACHE_DAYS=15
 ### 3. Configure OAuth
 
 #### Google OAuth:
+
 1. Acesse [Google Cloud Console](https://console.cloud.google.com/)
 2. Crie um projeto
 3. Vá em "APIs & Services" > "Credentials"
@@ -95,6 +96,7 @@ CNPJ_CACHE_DAYS=15
    - `http://localhost:3000/api/auth/callback/google`
 
 #### GitHub OAuth:
+
 1. Acesse [GitHub Settings](https://github.com/settings/developers)
 2. Clique em "New OAuth App"
 3. Configure:
@@ -153,9 +155,11 @@ prisma/
 ## 🔑 Como Usar a API
 
 ### 1. Faça Login
+
 Acesse `/login` e autentique com Google ou GitHub.
 
 ### 2. Crie uma API Key
+
 No dashboard, vá em "API Keys" e crie uma nova chave.
 
 ### 3. Faça Requisições
@@ -196,20 +200,21 @@ curl -X GET "http://localhost:3000/api/v1/cnpj/00000000000191" \
 
 ## 💳 Sistema de Créditos
 
-### Planos Disponíveis
-
-| Plano | Crédito/Consulta | Rate Limit |
-|-------|-----------------|------------|
-| **Básico** | 0.33 | 2 req/s |
-| **Profissional** | 0.25 | 5 req/s |
-| **Empresarial** | 0.20 | 10 req/s |
-
 ### Como Funciona
 
-1. Cada consulta consome créditos baseado no plano
+Cada consulta consome **0.33 créditos**, independentemente da fonte de dados utilizada.
+
+### Pontos Importantes
+
+1. Cada consulta consome 0.33 créditos
 2. Se dados estiverem em cache (< 15 dias), a consulta é mais rápida mas ainda consome créditos
 3. Cache é atualizado automaticamente após 15 dias na próxima consulta
 4. Novos usuários recebem **100 créditos de boas-vindas** (~300 consultas)
+5. Créditos podem ser adicionados através do dashboard
+
+### Adicionando Créditos
+
+Acesse o dashboard e clique em "Adicionar Créditos" para visualizar os pacotes disponíveis.
 
 ## 🔒 Segurança
 
@@ -225,9 +230,10 @@ curl -X GET "http://localhost:3000/api/v1/cnpj/00000000000191" \
 ### Principais Tabelas
 
 - **User** - Usuários autenticados
-- **Plan** - Planos de créditos
+- **CreditPack** - Pacotes de créditos disponíveis para compra
 - **ApiKey** - Chaves de API
 - **Credit** - Histórico de créditos
+- **Transaction** - Transações de compra de créditos
 - **CnpjData** - Cache de dados de CNPJ
 - **CnpjQuery** - Log de consultas
 
@@ -255,6 +261,7 @@ npx prisma migrate reset
 ## 📊 Monitoramento
 
 O sistema registra:
+
 - ✅ Todas consultas (sucesso/falha)
 - ✅ Fonte dos dados (cache ou qual API)
 - ✅ Custo em créditos
@@ -264,14 +271,14 @@ O sistema registra:
 ## 🚀 Deploy
 
 ### Vercel (Recomendado)
+
 ## 📝 Roadmap
 
 Veja [CHANGELOG.md](CHANGELOG.md) para features planejadas:
 
-- [ ] Sistema de pagamento (Stripe/Mercado Pago)
+- [ ] Melhorias no sistema de pagamento
 - [ ] Webhooks para notificações
-- [ ] Dashboard com gráficos de uso
-- [ ] Planos com renovação automática
+- [ ] Dashboard com gráficos de uso avançados
 - [ ] API de consulta em lote
 - [ ] Exportação de relatórios
 - [ ] Testes automatizados
@@ -317,6 +324,7 @@ Se este projeto foi útil para você, considere dar uma ⭐!
 Desenvolvido com ❤️ usando Next.js, Prisma e TypeScript
 
 **[⬆ Voltar ao topo](#cnpjota-)**
+
 - [ ] Docker compose para desenvolvimento
 
 ## 📄 Licença

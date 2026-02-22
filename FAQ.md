@@ -5,6 +5,7 @@
 ### O que é CNPJota?
 
 CNPJota é uma API SaaS para consulta de dados de CNPJ (empresas brasileiras). Oferecemos:
+
 - Cache inteligente (15 dias)
 - Múltiplas fontes de dados com fallback automático
 - Sistema de créditos flexível
@@ -12,20 +13,17 @@ CNPJota é uma API SaaS para consulta de dados de CNPJ (empresas brasileiras). O
 
 ### É gratuito?
 
-Novos usuários ganham **100 créditos de boas-vindas** (~300 consultas no plano básico). Depois, você pode adicionar créditos conforme necessário.
+Novos usuários ganham **100 créditos de boas-vindas** (~300 consultas). Depois, você pode adicionar créditos conforme necessário.
 
 ### Preciso de conhecimento técnico?
 
 Para usar a API, sim - você precisa saber fazer requisições HTTP. Mas fornecemos exemplos em várias linguagens!
 
-## 💰 Créditos e Planos
+## 💰 Créditos
 
 ### Quanto custa por consulta?
 
-Depende do seu plano:
-- **Básico**: 0.33 créditos/consulta
-- **Profissional**: 0.25 créditos/consulta  
-- **Empresarial**: 0.20 créditos/consulta
+Cada consulta custa **0.33 créditos**, independentemente da fonte de dados utilizada.
 
 ### Como funcionam os créditos?
 
@@ -58,6 +56,7 @@ Sim! Recomendamos uma key por ambiente (desenvolvimento, produção, etc.).
 ### Perdi minha API Key, e agora?
 
 Por segurança, não podemos recuperar. Você precisa:
+
 1. Desativar a key perdida
 2. Criar uma nova
 3. Atualizar suas aplicações
@@ -89,6 +88,7 @@ const apiKey = process.env.CNPJ_API_KEY
 ### Os dados vêm da Receita Federal?
 
 Sim, indiretamente. Usamos 4 APIs públicas que consomem dados da Receita Federal:
+
 1. BrasilAPI
 2. OpenCNPJ
 3. CNPJá
@@ -127,10 +127,7 @@ Porque você está usando nossa infraestrutura, banco de dados e API. O cache é
 
 ### Quantas requisições posso fazer?
 
-Depende do seu plano:
-- **Básico**: 2 requisições/segundo
-- **Profissional**: 5 requisições/segundo
-- **Empresarial**: 10 requisições/segundo
+A API tem um limite de requisições por segundo para garantir a estabilidade do serviço para todos os usuários.
 
 ### O que acontece se exceder?
 
@@ -153,6 +150,7 @@ async function consultarLote(cnpjs) {
 ### Quais linguagens posso usar?
 
 Qualquer uma! É uma API REST padrão. Temos exemplos em:
+
 - JavaScript/Node.js
 - Python
 - PHP
@@ -162,6 +160,7 @@ Qualquer uma! É uma API REST padrão. Temos exemplos em:
 ### Preciso de um servidor?
 
 Não necessariamente. Você pode:
+
 - Chamar do frontend (exponha a key com cuidado!)
 - Usar serverless functions (Vercel, Netlify)
 - Usar em qualquer backend
@@ -206,6 +205,7 @@ Ainda não, mas é simples usar fetch/axios/requests.
 ### CNPJ não encontrado
 
 Verifique se:
+
 - CNPJ está correto
 - CNPJ existe (valide em: receita.fazenda.gov.br)
 - Tentamos todas as 4 APIs (veja logs)
@@ -215,6 +215,7 @@ Verifique se:
 ### Meus dados estão seguros?
 
 Sim! Usamos:
+
 - HTTPS obrigatório
 - API Keys com hash SHA-256
 - OAuth 2.0 para login
@@ -237,6 +238,7 @@ Não, apenas por segundo (rate limit). Desde que tenha créditos, pode consultar
 ### Posso usar comercialmente?
 
 Sim! CNPJota é ideal para:
+
 - Validação de cadastros
 - Sistemas de crédito
 - Análise de dados

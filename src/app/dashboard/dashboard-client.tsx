@@ -1,23 +1,23 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { CreditCard, Key, BarChart3, Copy, Check, Plus, Trash2 } from 'lucide-react';
-import { CodeBlock } from '@/components/ui/code-block';
-import { LanguageIcon } from '@/components/ui/language-icon';
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { CodeBlock } from "@/components/ui/code-block";
+import { LanguageIcon } from "@/components/ui/language-icon";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { BarChart3, Check, Copy, CreditCard, Key, Plus } from "lucide-react";
+import { useState } from "react";
 
 interface DashboardClientProps {
   user: {
     name: string | null;
     email: string;
-    plan: {
-      displayName: string;
-      creditCost: number;
-      maxRequestsPerSecond: number;
-    } | null;
   };
   stats: {
     credits: number;
@@ -33,7 +33,12 @@ interface DashboardClientProps {
   apiUrl: string;
 }
 
-export default function DashboardClient({ user, stats, apiKey: initialApiKey, apiUrl }: DashboardClientProps) {
+export default function DashboardClient({
+  user,
+  stats,
+  apiKey: initialApiKey,
+  apiUrl,
+}: DashboardClientProps) {
   const [apiKey, setApiKey] = useState(initialApiKey);
   const [createdApiKey, setCreatedApiKey] = useState<string | null>(null);
   const [copiedKey, setCopiedKey] = useState(false);
@@ -42,10 +47,10 @@ export default function DashboardClient({ user, stats, apiKey: initialApiKey, ap
   const handleCreateApiKey = async () => {
     setIsCreating(true);
     try {
-      const response = await fetch('/api/v1/api-keys', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: 'API Key' }),
+      const response = await fetch("/api/v1/api-keys", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: "API Key" }),
       });
 
       const result = await response.json();
@@ -61,20 +66,25 @@ export default function DashboardClient({ user, stats, apiKey: initialApiKey, ap
         });
       }
     } catch (error) {
-      console.error('Erro ao criar API key:', error);
+      console.error("Erro ao criar API key:", error);
     } finally {
       setIsCreating(false);
     }
   };
 
   const handleRegenerateApiKey = async () => {
-    if (!confirm('Tem certeza que deseja regenerar sua API key? A chave atual será desativada.')) return;
+    if (
+      !confirm(
+        "Tem certeza que deseja regenerar sua API key? A chave atual será desativada.",
+      )
+    )
+      return;
 
     setIsCreating(true);
     try {
       const response = await fetch(`/api/v1/api-keys/${apiKey!.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ regenerate: true }),
       });
 
@@ -91,7 +101,7 @@ export default function DashboardClient({ user, stats, apiKey: initialApiKey, ap
         });
       }
     } catch (error) {
-      console.error('Erro ao regenerar API key:', error);
+      console.error("Erro ao regenerar API key:", error);
     } finally {
       setIsCreating(false);
     }
@@ -109,37 +119,45 @@ export default function DashboardClient({ user, stats, apiKey: initialApiKey, ap
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Créditos Disponíveis</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Créditos Disponíveis
+            </CardTitle>
             <CreditCard className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.credits.toFixed(2)}</div>
             <p className="text-xs text-muted-foreground">
-              ~{Math.floor(stats.credits / (user.plan?.creditCost || 0.33))} consultas
+              ~{Math.floor(stats.credits / 0.33)} consultas
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total de Consultas</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total de Consultas
+            </CardTitle>
             <BarChart3 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalQueries}</div>
-            <p className="text-xs text-muted-foreground">Consultas realizadas</p>
+            <p className="text-xs text-muted-foreground">
+              Consultas realizadas
+            </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Plano Atual</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Custo por Consulta
+            </CardTitle>
             <Key className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{user.plan?.displayName || 'Básico'}</div>
+            <div className="text-2xl font-bold">0.33</div>
             <p className="text-xs text-muted-foreground">
-              {user.plan?.creditCost || 0.33} créditos/consulta
+              créditos por consulta
             </p>
           </CardContent>
         </Card>
@@ -179,7 +197,11 @@ export default function DashboardClient({ user, stats, apiKey: initialApiKey, ap
                       variant="outline"
                       onClick={() => copyToClipboard(createdApiKey)}
                     >
-                      {copiedKey ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                      {copiedKey ? (
+                        <Check className="h-4 w-4" />
+                      ) : (
+                        <Copy className="h-4 w-4" />
+                      )}
                     </Button>
                   </div>
                   <Button
@@ -196,7 +218,8 @@ export default function DashboardClient({ user, stats, apiKey: initialApiKey, ap
               {!apiKey ? (
                 <div className="space-y-4">
                   <p className="text-sm text-muted-foreground">
-                    Você ainda não possui uma API key. Crie uma para começar a usar o serviço.
+                    Você ainda não possui uma API key. Crie uma para começar a
+                    usar o serviço.
                   </p>
                   <Button onClick={handleCreateApiKey} disabled={isCreating}>
                     <Plus className="h-4 w-4 mr-2" />
@@ -224,7 +247,9 @@ export default function DashboardClient({ user, stats, apiKey: initialApiKey, ap
 
                     <div className="space-y-2">
                       <div>
-                        <label className="text-xs font-medium text-muted-foreground">API KEY</label>
+                        <label className="text-xs font-medium text-muted-foreground">
+                          API KEY
+                        </label>
                         <div className="flex gap-2 mt-1">
                           <code className="flex-1 p-2 bg-background rounded border text-xs break-all font-mono">
                             {apiKey.key}
@@ -234,22 +259,39 @@ export default function DashboardClient({ user, stats, apiKey: initialApiKey, ap
                             variant="outline"
                             onClick={() => copyToClipboard(apiKey.key)}
                           >
-                            {copiedKey ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                            {copiedKey ? (
+                              <Check className="h-4 w-4" />
+                            ) : (
+                              <Copy className="h-4 w-4" />
+                            )}
                           </Button>
                         </div>
                       </div>
 
                       <div className="flex gap-4 text-xs text-muted-foreground">
-                        <span>Criada em {new Date(apiKey.createdAt).toLocaleDateString('pt-BR')}</span>
+                        <span>
+                          Criada em{" "}
+                          {new Date(apiKey.createdAt).toLocaleDateString(
+                            "pt-BR",
+                          )}
+                        </span>
                         {apiKey.lastUsedAt && (
-                          <span>Último uso: {new Date(apiKey.lastUsedAt).toLocaleDateString('pt-BR')}</span>
+                          <span>
+                            Último uso:{" "}
+                            {new Date(apiKey.lastUsedAt).toLocaleDateString(
+                              "pt-BR",
+                            )}
+                          </span>
                         )}
                       </div>
                     </div>
                   </div>
 
                   <div className="text-xs text-muted-foreground">
-                    <p><strong>Importante:</strong> Mantenha sua API key segura e não a compartilhe publicamente.</p>
+                    <p>
+                      <strong>Importante:</strong> Mantenha sua API key segura e
+                      não a compartilhe publicamente.
+                    </p>
                   </div>
                 </div>
               )}
@@ -262,7 +304,8 @@ export default function DashboardClient({ user, stats, apiKey: initialApiKey, ap
             <CardHeader>
               <CardTitle>Como Integrar</CardTitle>
               <CardDescription>
-                Exemplos de código em diversas linguagens de programação populares
+                Exemplos de código em diversas linguagens de programação
+                populares
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -274,41 +317,67 @@ export default function DashboardClient({ user, stats, apiKey: initialApiKey, ap
                   </code>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Use esta URL nos seus exemplos de integração. Em produção, configure a variável NEXT_PUBLIC_API_URL com o domínio do seu servidor.
+                  Use esta URL nos seus exemplos de integração. Em produção,
+                  configure a variável NEXT_PUBLIC_API_URL com o domínio do seu
+                  servidor.
                 </p>
               </div>
 
               <Tabs defaultValue="javascript" className="w-full">
                 <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8 mb-6 h-auto gap-2 bg-muted/50 p-2">
-                  <TabsTrigger value="javascript" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                  <TabsTrigger
+                    value="javascript"
+                    className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                  >
                     <LanguageIcon language="javascript" className="w-5 h-5" />
                     <span className="hidden sm:inline">JavaScript</span>
                   </TabsTrigger>
-                  <TabsTrigger value="python" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                  <TabsTrigger
+                    value="python"
+                    className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                  >
                     <LanguageIcon language="python" className="w-5 h-5" />
                     <span className="hidden sm:inline">Python</span>
                   </TabsTrigger>
-                  <TabsTrigger value="php" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                  <TabsTrigger
+                    value="php"
+                    className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                  >
                     <LanguageIcon language="php" className="w-5 h-5" />
                     <span className="hidden sm:inline">PHP</span>
                   </TabsTrigger>
-                  <TabsTrigger value="java" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                  <TabsTrigger
+                    value="java"
+                    className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                  >
                     <LanguageIcon language="java" className="w-5 h-5" />
                     <span className="hidden sm:inline">Java</span>
                   </TabsTrigger>
-                  <TabsTrigger value="go" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                  <TabsTrigger
+                    value="go"
+                    className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                  >
                     <LanguageIcon language="go" className="w-5 h-5" />
                     <span className="hidden sm:inline">Go</span>
                   </TabsTrigger>
-                  <TabsTrigger value="ruby" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                  <TabsTrigger
+                    value="ruby"
+                    className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                  >
                     <LanguageIcon language="ruby" className="w-5 h-5" />
                     <span className="hidden sm:inline">Ruby</span>
                   </TabsTrigger>
-                  <TabsTrigger value="csharp" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                  <TabsTrigger
+                    value="csharp"
+                    className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                  >
                     <LanguageIcon language="csharp" className="w-5 h-5" />
                     <span className="hidden sm:inline">C#</span>
                   </TabsTrigger>
-                  <TabsTrigger value="curl" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                  <TabsTrigger
+                    value="curl"
+                    className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                  >
                     <LanguageIcon language="curl" className="w-5 h-5" />
                     <span className="hidden sm:inline">cURL</span>
                   </TabsTrigger>
@@ -322,9 +391,9 @@ export default function DashboardClient({ user, stats, apiKey: initialApiKey, ap
                   <p className="text-sm text-muted-foreground mt-3">
                     Exemplo usando fetch API (Node.js 18+ ou navegador):
                   </p>
-                  <CodeBlock 
-                    language="javascript" 
-                    code={`const apiKey = '${apiKey?.key || 'sua-api-key-aqui'}';
+                  <CodeBlock
+                    language="javascript"
+                    code={`const apiKey = '${apiKey?.key || "sua-api-key-aqui"}';
 const cnpj = '00000000000191';
 
 const response = await fetch(
@@ -337,7 +406,7 @@ const response = await fetch(
 );
 
 const data = await response.json();
-console.log(data);`} 
+console.log(data);`}
                   />
                 </TabsContent>
 
@@ -349,11 +418,11 @@ console.log(data);`}
                   <p className="text-sm text-muted-foreground mt-3">
                     Exemplo usando a biblioteca requests:
                   </p>
-                  <CodeBlock 
-                    language="python" 
+                  <CodeBlock
+                    language="python"
                     code={`import requests
 
-api_key = '${apiKey?.key || 'sua-api-key-aqui'}'
+api_key = '${apiKey?.key || "sua-api-key-aqui"}'
 cnpj = '00000000000191'
 
 response = requests.get(
@@ -362,7 +431,7 @@ response = requests.get(
 )
 
 data = response.json()
-print(data)`} 
+print(data)`}
                   />
                 </TabsContent>
 
@@ -374,10 +443,10 @@ print(data)`}
                   <p className="text-sm text-muted-foreground mt-3">
                     Exemplo usando cURL do PHP:
                   </p>
-                  <CodeBlock 
-                    language="php" 
+                  <CodeBlock
+                    language="php"
                     code={`<?php
-$apiKey = '${apiKey?.key || 'sua-api-key-aqui'}';
+$apiKey = '${apiKey?.key || "sua-api-key-aqui"}';
 $cnpj = '00000000000191';
 
 $ch = curl_init();
@@ -391,7 +460,7 @@ $response = curl_exec($ch);
 curl_close($ch);
 
 $data = json_decode($response, true);
-print_r($data);`} 
+print_r($data);`}
                   />
                 </TabsContent>
 
@@ -403,12 +472,12 @@ print_r($data);`}
                   <p className="text-sm text-muted-foreground mt-3">
                     Exemplo usando HttpClient:
                   </p>
-                  <CodeBlock 
-                    language="java" 
+                  <CodeBlock
+                    language="java"
                     code={`import java.net.http.*;
 import java.net.URI;
 
-String apiKey = "${apiKey?.key || 'sua-api-key-aqui'}";
+String apiKey = "${apiKey?.key || "sua-api-key-aqui"}";
 String cnpj = "00000000000191";
 
 HttpClient client = HttpClient.newHttpClient();
@@ -421,7 +490,7 @@ HttpRequest request = HttpRequest.newBuilder()
 HttpResponse<String> response = client.send(request, 
     HttpResponse.BodyHandlers.ofString());
     
-System.out.println(response.body());`} 
+System.out.println(response.body());`}
                   />
                 </TabsContent>
 
@@ -433,8 +502,8 @@ System.out.println(response.body());`}
                   <p className="text-sm text-muted-foreground mt-3">
                     Exemplo usando net/http:
                   </p>
-                  <CodeBlock 
-                    language="go" 
+                  <CodeBlock
+                    language="go"
                     code={`package main
 
 import (
@@ -444,7 +513,7 @@ import (
 )
 
 func main() {
-    apiKey := "${apiKey?.key || 'sua-api-key-aqui'}"
+    apiKey := "${apiKey?.key || "sua-api-key-aqui"}"
     cnpj := "00000000000191"
     
     url := fmt.Sprintf("${apiUrl}/api/v1/cnpj/%s", cnpj)
@@ -458,7 +527,7 @@ func main() {
     
     body, _ := io.ReadAll(resp.Body)
     fmt.Println(string(body))
-}`} 
+}`}
                   />
                 </TabsContent>
 
@@ -470,12 +539,12 @@ func main() {
                   <p className="text-sm text-muted-foreground mt-3">
                     Exemplo usando Net::HTTP:
                   </p>
-                  <CodeBlock 
-                    language="ruby" 
+                  <CodeBlock
+                    language="ruby"
                     code={`require 'net/http'
 require 'json'
 
-api_key = '${apiKey?.key || 'sua-api-key-aqui'}'
+api_key = '${apiKey?.key || "sua-api-key-aqui"}'
 cnpj = '00000000000191'
 
 uri = URI("${apiUrl}/api/v1/cnpj/#{cnpj}")
@@ -487,7 +556,7 @@ res = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) do |http|
 end
 
 data = JSON.parse(res.body)
-puts data`} 
+puts data`}
                   />
                 </TabsContent>
 
@@ -499,13 +568,13 @@ puts data`}
                   <p className="text-sm text-muted-foreground mt-3">
                     Exemplo usando HttpClient:
                   </p>
-                  <CodeBlock 
-                    language="csharp" 
+                  <CodeBlock
+                    language="csharp"
                     code={`using System;
 using System.Net.Http;
 using System.Threading.Tasks;
 
-var apiKey = "${apiKey?.key || 'sua-api-key-aqui'}";
+var apiKey = "${apiKey?.key || "sua-api-key-aqui"}";
 var cnpj = "00000000000191";
 
 using var client = new HttpClient();
@@ -516,7 +585,7 @@ var response = await client.GetAsync(
 );
 
 var data = await response.Content.ReadAsStringAsync();
-Console.WriteLine(data);`} 
+Console.WriteLine(data);`}
                   />
                 </TabsContent>
 
@@ -528,10 +597,10 @@ Console.WriteLine(data);`}
                   <p className="text-sm text-muted-foreground mt-3">
                     Exemplo usando cURL no terminal:
                   </p>
-                  <CodeBlock 
-                    language="bash" 
+                  <CodeBlock
+                    language="bash"
                     code={`curl -X GET "${apiUrl}/api/v1/cnpj/00000000000191" \\
-  -H "Authorization: Bearer ${apiKey?.key || 'sua-api-key-aqui'}"`} 
+  -H "Authorization: Bearer ${apiKey?.key || "sua-api-key-aqui"}"`}
                   />
                 </TabsContent>
               </Tabs>
@@ -544,8 +613,8 @@ Console.WriteLine(data);`}
                 <p className="text-sm text-muted-foreground mb-4">
                   A API retorna os dados da empresa em formato JSON estruturado:
                 </p>
-                <CodeBlock 
-                  language="json" 
+                <CodeBlock
+                  language="json"
                   code={`{
   "success": true,
   "data": {
@@ -565,7 +634,7 @@ Console.WriteLine(data);`}
       "cep": "01234-567"
     }
   }
-}`} 
+}`}
                 />
               </div>
             </CardContent>
@@ -585,8 +654,12 @@ Console.WriteLine(data);`}
                 <div className="border rounded-lg p-4 hover:border-primary cursor-pointer transition">
                   <h4 className="font-bold text-lg">Básico</h4>
                   <p className="text-3xl font-bold my-2">R$ 9,90</p>
-                  <p className="text-sm text-muted-foreground mb-4">100 créditos</p>
-                  <p className="text-xs text-muted-foreground">~300 consultas</p>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    100 créditos
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    ~300 consultas
+                  </p>
                   <Button className="w-full mt-4" variant="outline">
                     Em breve
                   </Button>
@@ -598,16 +671,24 @@ Console.WriteLine(data);`}
                   </div>
                   <h4 className="font-bold text-lg">Profissional</h4>
                   <p className="text-3xl font-bold my-2">R$ 29,90</p>
-                  <p className="text-sm text-muted-foreground mb-4">500 créditos</p>
-                  <p className="text-xs text-muted-foreground">~1.500 consultas</p>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    500 créditos
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    ~1.500 consultas
+                  </p>
                   <Button className="w-full mt-4">Em breve</Button>
                 </div>
 
                 <div className="border rounded-lg p-4 hover:border-primary cursor-pointer transition">
                   <h4 className="font-bold text-lg">Empresarial</h4>
                   <p className="text-3xl font-bold my-2">R$ 99,90</p>
-                  <p className="text-sm text-muted-foreground mb-4">2.000 créditos</p>
-                  <p className="text-xs text-muted-foreground">~6.000 consultas</p>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    2.000 créditos
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    ~6.000 consultas
+                  </p>
                   <Button className="w-full mt-4" variant="outline">
                     Em breve
                   </Button>
@@ -615,7 +696,8 @@ Console.WriteLine(data);`}
               </div>
 
               <p className="text-xs text-muted-foreground mt-4 text-center">
-                * Os valores são aproximados baseado no plano básico (0.33 créditos/consulta)
+                * Os valores são aproximados baseado no plano básico (0.33
+                créditos/consulta)
               </p>
             </CardContent>
           </Card>

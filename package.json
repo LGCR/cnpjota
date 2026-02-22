@@ -3,19 +3,24 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 3005",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "postinstall": "prisma generate",
     "verify": "node scripts/verify-setup.js",
-    "setup": "npm install && npx prisma generate && node scripts/verify-setup.js"
+    "setup": "npm install && npx prisma generate && node scripts/verify-setup.js",
+    "seed:credit-packs": "tsx scripts/seed-credit-packs.ts",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:studio": "prisma studio",
+    "sdk:update": "cd ../clickpay/payera-sdk && npm run build && npm pack --pack-destination ../../cnpjota/vendor && cd ../../cnpjota && npm install ./vendor/clickpay-sdk-1.0.0.tgz"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.7.4",
+    "@clickpay/sdk": "file:vendor/clickpay-sdk-1.0.0.tgz",
     "@prisma/adapter-pg": "^7.1.0",
     "@prisma/client": "^7.1.0",
     "@radix-ui/react-avatar": "^1.1.11",
@@ -34,6 +39,7 @@
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "daisyui": "^5.5.13",
+    "date-fns": "^4.1.0",
     "lucide-react": "^0.560.0",
     "next": "^16.0.10",
     "next-auth": "^5.0.0-beta.25",
@@ -54,6 +60,7 @@
     "@types/react-dom": "^19",
     "@types/react-syntax-highlighter": "^15.5.13",
     "autoprefixer": "^10.4.22",
+    "dotenv": "^17.2.3",
     "eslint": "^9",
     "eslint-config-next": "15.0.3",
     "postcss": "^8.5.6",
